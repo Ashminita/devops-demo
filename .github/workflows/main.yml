@@ -3,57 +3,62 @@ name: Test and Build
 on:
   push:
     branches:
-    - main
+      - main
     paths:
-    - '**/*'
+      - '**/*'
 
 jobs:
   build:
     runs-on: ubuntu-latest
 
     steps:
-    #Setting up environment
-    - name: Checkout code
-      uses: actions/checkout@v2
+      - name: Checkout code
+        uses: actions/checkout@v2
 
-    - name: Docker Setup
-      uses: docker/setup-buildx-action@v2
+      - name: Docker Setup
+        uses: docker/setup-buildx-action@v2
 
-    - name: Docker Credentials
-      uses: docker/login-action@v2
-      with:
-        username: ${{ secrets.DOCKER_USERNAME }}
-        password: ${{ secrets.DOCKER_PASSWORD }}
+      - name: Docker Credentials
+        uses: docker/login-action@v2
+        with:
+          username: ${{ secrets.DOCKER_USERNAME }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
 
-    - name: Docker tag
-      id: version
-      run: |
-        VERSION=v$(date +"%Y%m%d%H%M%S")
-        echo "VERSION=$VERSION" >> $GITHUB_ENV
+      - name: Generate Docker tag
+        run: |
+          echo "VERSION=v$(date +"%Y%m%d%H%M%S")" >> $GITHUB_ENV
 
-    # Build the Docker Image
-    - name: Build Docker Image
-      run: |
-        docker build -t ashminita28/devops-demo:${{ env.VERSION }} .
+      - name: Print Version
+        run: echo "VERSION is $VERSION"
+        env:
+          VERSION: ${{ env.VERSION }}
 
-    # Push the Docker Image
-    - name: Push Docker Image
-      run: |
-        docker push ashminita28/devops-demo:${{ env.VERSION }}
+      - name: Build Docker Image
+        run: |
+          docker build -t ashminita28/devops-demo:$VERSION .
+        env:
+          VERSION: ${{ env.VERSION }}
 
-    # UPdate the K8s Manifest Files
-    - name: Update K8s Manifests
-      run: |
-        cat deploy/deployment.yaml
-        sed -i "s|image: ashminita28/devops-demo:.*|image: ashminita28/devops-demo:${{ env.VERSION }}|g" deploy/deployment.yaml
-        cat deploy/deployment.yaml
+      - name: Push Docker Image
+        run: |
+          docker push ashminita28/devops-demo:$VERSION
+        env:
+          VERSION: ${{ env.VERSION }}
 
-    # Update Github
-    - name: Commit the changes
-      run: |
-        git config --global user.email "<>"
-        git config --global user.name "GitHub Actions Bot"
-        git checkout main
-        git add deploy/deployment.yaml
-        git commit -m "Update deploy.yaml with new image version - ${{ env.VERSION }}"
-        git push origin main
+      - name: Update K8s Manifests
+        run: |
+          sed -i "s|image: ashminita28/devops-demo:.*|image: ashminita28/devops-demo:$VERSION|g" deploy/deployment.yaml
+          cat deploy/deployment.yaml
+        env:
+          VERSION: ${{ env.VERSION }}
+
+      - name: Commit the changes
+        run: |
+          git config --global user.email "<>"
+          git config --global user.name "GitHub Actions Bot"
+          git checkout main
+          git add deploy/deployment.yaml
+          git commit -m "Update deploy.yaml with new image version - $VERSION"
+          git push origin main
+        env:
+          VERSION: ${{ env.VERSION }}
