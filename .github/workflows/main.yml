@@ -35,18 +35,18 @@ jobs:
     # Build the Docker Image
     - name: Build Docker Image
       run: |
-        docker build -t Ashminita/devops-demo:${{ env.VERSION }} .
+        docker build -t ashminita28/devops-demo:${{ env.VERSION }} .
 
     # Push the Docker Image
     - name: Push Docker Image
       run: |
-        docker push Ashminita/devops-demo:${{ env.VERSION }}
+        docker push ashminita28/devops-demo:${{ env.VERSION }}
 
     # UPdate the K8s Manifest Files
     - name: Update K8s Manifests
       run: |
         cat deploy/deployment.yaml
-        sed -i "s|image: Ashminita/devops-demo:.*|image: Ashminita/devops-demo:${{ env.VERSION }}|g" deploy/deployment.yaml
+        sed -i "s|image: ashminita28/devops-demo:.*|image: ashminita28/devops-demo:${{ env.VERSION }}|g" deploy/deployment.yaml
         cat deploy/deployment.yaml
 
     # Update Github
